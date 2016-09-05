@@ -57,6 +57,7 @@ object BuildAdvancedModel extends SparkContextSupport {
     addFiles(sc, absPath(data_dir + numeric_train_file))
     val trainURI = new URI("file:///" + SparkFiles.get(numeric_train_file))
     val trainData = new h2o.H2OFrame(trainURI)
+    trainData.colToEnum(Array("Response"))
 
     val model = DRFModel(trainData)
 
@@ -91,13 +92,13 @@ object BuildAdvancedModel extends SparkContextSupport {
 
     val params = new DRFParameters()
     params._train = train.key
-    //    params._distribution = Distribution.Family.gaussian
+    //params._distribution = Distribution.Family.gaussian
     params._response_column = "Response"
     params._ignored_columns = Array("Id")
     params._ignore_const_cols = true
-    //    params._seed =  -6242730077026816667 //-1188814820856564594L  //5428260616053944984
+    //   params._seed =  -6242730077026816667 //-1188814820856564594L  //5428260616053944984
     params._ntrees = 50
-    params._max_depth = 12
+//    params._max_depth = 12
     params._distribution = Distribution.Family.AUTO
 
     println("BUILDING:" + params.fullName)
