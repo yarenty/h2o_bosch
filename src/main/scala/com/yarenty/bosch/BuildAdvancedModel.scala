@@ -5,6 +5,7 @@ import java.net.URI
 
 import com.yarenty.bosch.utils.Helper
 import hex.Distribution
+import hex.ScoreKeeper.StoppingMetric
 import hex.deeplearning.{DeepLearning, DeepLearningModel}
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
 import hex.genmodel.GenModel
@@ -59,7 +60,7 @@ object BuildAdvancedModel extends SparkContextSupport {
     val trainData = new h2o.H2OFrame(trainURI)
     trainData.colToEnum(Array("Response"))
 
-    val model = DRFModel(trainData)
+    val model = DLModel(trainData)
 
 
 
@@ -73,19 +74,17 @@ object BuildAdvancedModel extends SparkContextSupport {
     val predVec = predict.lastVec // only one
 
     val out = testData.subframe(Array("Id"))
-    out.add("Response",predict.vec("predict"))
+    out.add("Response", predict.vec("predict"))
 
-    Helper.saveCSV(out,data_dir + "submit.csv")
+    Helper.saveCSV(out, data_dir + "submit.csv")
 
     println("=========> off to go!!!")
   }
 
 
-
   /** ****************************************************
     * MODELS
     * *****************************************************/
-
 
 
   def DRFModel(train: H2OFrame): DRFModel = {
@@ -98,8 +97,9 @@ object BuildAdvancedModel extends SparkContextSupport {
     params._ignore_const_cols = true
     //   params._seed =  -6242730077026816667 //-1188814820856564594L  //5428260616053944984
     params._ntrees = 50
-//    params._max_depth = 12
+    //    params._max_depth = 12
     params._distribution = Distribution.Family.AUTO
+    params._stopping_metric  = StoppingMetric.AUC
 
     println("BUILDING:" + params.fullName)
     val dl = new DRF(params)
@@ -114,21 +114,31 @@ object BuildAdvancedModel extends SparkContextSupport {
     params._train = train.key
     params._response_column = "Response"
     params._ignored_columns = Array("Id")
+
     params._ignore_const_cols = true
+    params._epochs = 500.0
 
-//    params._seed = -8823609696683622000L // 6433149976926940000L    //-8996666368897430268
+    params._activation = DeepLearningParameters.Activation.TanhWithDropout
+    params._input_dropout_ratio =0.02
+    params._hidden_dropout_ratios = Array(0.05,0.05,0.05,0.05,0.05,0.05)
 
-//    params._hidden = Array(200, 200) //Feel Lucky
-    // params._hidden = Array(512) //Eagle Eye
-    // params._hidden = Array(64,64,64) //Puppy Brain
-     params._hidden = Array(32,32,32) //Junior Chess Master
-//     params._hidden = Array(32,32,32,32,32) //Junior Chess Master
-
-
-    params._epochs = 200.0
-    params._standardize = true
-    params._score_each_iteration = true
+//    params._score_each_iteration = true
     params._variable_importances = true
+
+    params._max_w2  = 10
+    params._stopping_metric =  StoppingMetric.MSE
+    params._stopping_rounds = 42
+
+    params._adaptive_rate = false
+    params._rate = 0.01
+    params._rate_annealing = 2e-6
+
+    params._momentum_start=0.2
+    params._momentum_stable=0.4
+    params._momentum_ramp=1e7
+
+    params._l1=1e-5
+    params._l2=1e-5
 
 
     println("BUILDING:" + params.fullName)

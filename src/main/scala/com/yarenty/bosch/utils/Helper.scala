@@ -13,8 +13,6 @@ import water.fvec.{Frame, Vec}
   */
 object Helper {
 
-
-
   def saveJavaPOJOModel(model: DRFModel, path: String): Unit = {
     val name = path + System.currentTimeMillis() + ".java"
     val om = new FileOutputStream(name)
